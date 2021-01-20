@@ -37,6 +37,7 @@ def main(args):
 
 
     if args.type=="aa" or args.type=="both":
+
         bcsq_found = False
         for l in fm.cmd_out("bcftools view %(vcf)s -h | grep BCSQ" % vars(args)):
             if "BCSQ" in l: bcsq_found = True
@@ -45,20 +46,24 @@ def main(args):
         sys.stderr.write("Loading amino acid variants\n")
         variants = defaultdict(set)
         missing = defaultdict(set)
+        csq2pos = {}
         vcf = fm.vcf_class(args.vcf)
-        for l in tqdm(fm.cmd_out("bcftools query -f '[%%SAMPLE\\t%%TBCSQ\\n]' %(vcf)s" % vars(args))):
+        for l in tqdm(fm.cmd_out("bcftools query -f '[%%POS\\t%%SAMPLE\\t%%TBCSQ\\n]' %(vcf)s" % vars(args))):
             row = l.strip().split()
-            tbcsq = row[1].split("|")
+            tbcsq = row[2].split("|")
 
-            if row[1][0]=="@": continue
+            if row[2][0]=="@": continue
             if "synonymous" in tbcsq[0]: continue
             if "non_coding" in tbcsq[0]: continue
 
-            variants[(tbcsq[2],tbcsq[5])].add(row[0])
+            variants[(tbcsq[2],tbcsq[5])].add(row[1])
+            csq2pos[(tbcsq[2],tbcsq[5])] = row[0]
+
 
         for l in tqdm(fm.cmd_out("bcftools query -i 'GT=\"mis\"' -f '%%POS\\t%%BCSQ[\\t%%SAMPLE]\\n' %(vcf)s" % vars(args))):
             row = l.strip().split()
-
+            if "Rv0002" in l and "11T>11S" in l:
+                import pdb; pdb.set_trace()
             if row[1]==".": continue
             for csq in row[1].split(","):
                 tmp = csq.split("|")
@@ -71,7 +76,6 @@ def main(args):
 
                 missing[mut] = set(row[2:])
 
-        sys.stderr.write("Writing output\n")
         with open(args.out+".aa.pheno.txt","w") as O:
             if args.format=="plink2":
                 O.write("#IID\t%s\n" % ("\t".join(["%s_%s" % (mut[0],mut[1].replace(">","_")) for mut in variants])))
@@ -90,29 +94,37 @@ def main(args):
                 else:
                     O.write("%s\t%s\n" % (s,"\t".join(sample_vector)))
 
-        if args.format=="plink1":
             with open(args.out+".aa.phenotype_map.txt","w") as O:
                 for i,mut in enumerate(variants):
-                    O.write("%s\t%s\t%s\n" % (i+1,mut[0],mut[1]))
+                    O.write("%s\t%s\t%s\t%s\t%s_%s\n" % (i+1,mut[0],mut[1],csq2pos[(mut[0],mut[1])], mut[0],mut[1].replace(">","_")))
+
 
         if args.compress:
-            if args.format=="plink1" or args.type=="dna":
-                sys.stderr.write("The --compress option is currently only available for plink2 format with wither 'aa' or 'both' type selected\n")
+            if args.type=="dna":
+                sys.stderr.write("The --compress option is currently only available with either 'aa' or 'both' type selected\n")
                 quit()
             patterns = defaultdict(list)
-            for l in fm.cmd_out("cat %s.aa.pheno.txt | datamash transpose" % args.out):
+            for i,l in enumerate(fm.cmd_out("cat %s.aa.pheno.txt | datamash transpose" % args.out)):
                 row = l.strip().split()
-                if row[0]=="#IID": continue
-                patterns[tuple(row[1:])].append(row[0])
+                if args.format=="plink2":
+                    if i<1: continue
+                    patterns[tuple(row[1:])].append(row[0])
+                elif args.format=="plink1":
+                    if i<2: continue
+                    patterns[tuple(row)].append(str(i+1))
 
             with open(args.out+".aa.pheno.compressed.txt","w") as O:
-                O.write("#IID\t%s\n" % ("\t".join(["variant_"+str(i).zfill(3) for i in range(len(patterns))])))
+                if args.format=="plink2":
+                    O.write("#IID\t%s\n" % ("\t".join(["variant_"+str(i).zfill(4) for i in range(len(patterns))])))
                 for i,s in enumerate(vcf.samples):
-                    O.write("%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
+                    if args.format=="plink1":
+                        O.write("0\t%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
+                    else:
+                        O.write("%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
 
             with open(args.out+".aa.pheno.compressed.map.txt","w") as O:
                 for i in range(len(patterns)):
-                    O.write("%s\t%s\n" % ("variant_"+str(i).zfill(3), ",".join(list(patterns.values())[i])))
+                    O.write("%s\t%s\n" % ("variant_"+str(i).zfill(4), ",".join(list(patterns.values())[i])))
 
 parser = argparse.ArgumentParser(description='XXX pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--vcf',help='VCF file',required=True)
