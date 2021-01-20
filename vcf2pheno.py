@@ -99,39 +99,38 @@ def main(args):
                     O.write("%s\t%s\t%s\t%s\t%s_%s\n" % (i+1,mut[0],mut[1],csq2pos[(mut[0],mut[1])], mut[0],mut[1].replace(">","_")))
 
 
-        if args.compress:
-            if args.type=="dna":
-                sys.stderr.write("The --compress option is currently only available with either 'aa' or 'both' type selected\n")
-                quit()
-            patterns = defaultdict(list)
-            for i,l in enumerate(fm.cmd_out("cat %s.aa.pheno.txt | datamash transpose" % args.out)):
-                row = l.strip().split()
-                if args.format=="plink2":
-                    if i<1: continue
-                    patterns[tuple(row[1:])].append(row[0])
-                elif args.format=="plink1":
-                    if i<2: continue
-                    patterns[tuple(row)].append(str(i+1))
 
-            with open(args.out+".aa.pheno.compressed.txt","w") as O:
-                if args.format=="plink2":
-                    O.write("#IID\t%s\n" % ("\t".join(["variant_"+str(i).zfill(4) for i in range(len(patterns))])))
-                for i,s in enumerate(vcf.samples):
-                    if args.format=="plink1":
-                        O.write("0\t%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
-                    else:
-                        O.write("%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
+        if args.type=="dna":
+            sys.stderr.write("The --compress option is currently only available with either 'aa' or 'both' type selected\n")
+            quit()
+        patterns = defaultdict(list)
+        for i,l in enumerate(fm.cmd_out("cat %s.aa.pheno.txt | datamash transpose" % args.out)):
+            row = l.strip().split()
+            if args.format=="plink2":
+                if i<1: continue
+                patterns[tuple(row[1:])].append(row[0])
+            elif args.format=="plink1":
+                if i<2: continue
+                patterns[tuple(row)].append(str(i+1))
 
-            with open(args.out+".aa.pheno.compressed.map.txt","w") as O:
-                for i in range(len(patterns)):
-                    O.write("%s\t%s\n" % ("variant_"+str(i).zfill(4), ",".join(list(patterns.values())[i])))
+        with open(args.out+".aa.pheno.compressed.txt","w") as O:
+            if args.format=="plink2":
+                O.write("#IID\t%s\n" % ("\t".join(["variant_"+str(i).zfill(4) for i in range(len(patterns))])))
+            for i,s in enumerate(vcf.samples):
+                if args.format=="plink1":
+                    O.write("0\t%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
+                else:
+                    O.write("%s\t%s\n" % (s,"\t".join([key[i] for key in list(patterns)])))
+
+        with open(args.out+".aa.pheno.compressed.map.txt","w") as O:
+            for i in range(len(patterns)):
+                O.write("%s\t%s\n" % ("variant_"+str(i).zfill(4), ",".join(list(patterns.values())[i])))
 
 parser = argparse.ArgumentParser(description='XXX pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--vcf',help='VCF file',required=True)
 parser.add_argument('--out',help='Prefix for the output files',required=True)
 parser.add_argument('--format',choices=["plink1","plink2"],help='VCF file',required=True)
 parser.add_argument('--type',choices=["dna","aa","both"],help='The type of output file generated',required=True)
-parser.add_argument('--compress',action="store_true",help='The type of output file generated')
 
 parser.set_defaults(func=main)
 args = parser.parse_args()
