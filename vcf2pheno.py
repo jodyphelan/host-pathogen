@@ -100,9 +100,29 @@ def main(args):
 
 
 
-        if args.type=="dna":
-            sys.stderr.write("The --compress option is currently only available with either 'aa' or 'both' type selected\n")
-            quit()
+        dna_patterns = defaultdict(list)
+        for i,l in enumerate(fm.cmd_out("cat %s.dna.pheno.txt | datamash transpose" % args.out)):
+            row = l.strip().split()
+            if args.format=="plink2":
+                if i<1: continue
+                dna_patterns[tuple(row[1:])].append(row[0])
+            elif args.format=="plink1":
+                if i<2: continue
+                dna_patterns[tuple(row)].append(str(i+1))
+
+        with open(args.out+".dna.pheno.compressed.txt","w") as O:
+            if args.format=="plink2":
+                O.write("#IID\t%s\n" % ("\t".join(["variant_"+str(i).zfill(4) for i in range(len(dna_patterns))])))
+            for i,s in enumerate(vcf.samples):
+                if args.format=="plink1":
+                    O.write("0\t%s\t%s\n" % (s,"\t".join([key[i] for key in list(dna_patterns)])))
+                else:
+                    O.write("%s\t%s\n" % (s,"\t".join([key[i] for key in list(dna_patterns)])))
+
+        with open(args.out+".dna.pheno.compressed.map.txt","w") as O:
+            for i in range(len(dna_patterns)):
+                O.write("%s\t%s\n" % ("variant_"+str(i).zfill(4), ",".join(list(dna_patterns.values())[i])))
+
         patterns = defaultdict(list)
         for i,l in enumerate(fm.cmd_out("cat %s.aa.pheno.txt | datamash transpose" % args.out)):
             row = l.strip().split()
