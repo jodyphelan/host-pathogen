@@ -18,6 +18,18 @@ def main(args):
                 else:
                     nt_variants[row[0]][s] = "-9"
 
+        if args.maf:
+            filter_out = []
+            for pos in nt_variants:
+                a = sum([1 for x in nt_variants[pos].values() if x=="2"])
+                m = sum([1 for x in nt_variants[pos].values() if x=="-9"])
+                alt_freq = a/(len(vcf.samples) - m)
+                if alt_freq<args.maf or alt_freq>(1-args.maf):
+                    filter_out.append(pos)
+            sys.stderr.write("Filtering out %s variants which don't pass maf criteria\n" % len(filter_out))
+            for pos in filter_out:
+                del nt_variants[pos]
+
         sys.stderr.write("Writing output\n")
         with open(args.out+".dna.pheno.txt","w") as O:
             if args.format=="plink2":
@@ -55,7 +67,7 @@ def main(args):
             if row[2][0]=="@": continue
             if "synonymous" in tbcsq[0]: continue
             if "non_coding" in tbcsq[0]: continue
-
+            if "start_lost" in tbcsq[0]: tbcsq.append("1M>1*")
             variants[(tbcsq[2],tbcsq[5])].add(row[1])
             csq2pos[(tbcsq[2],tbcsq[5])] = row[0]
 
@@ -76,6 +88,18 @@ def main(args):
 
                 missing[mut] = set(row[2:])
 
+        if args.maf:
+            filter_out = []
+            for key in variants:
+                a = len(variants[key])
+                m = len(missing[key])
+                alt_freq = a/(len(vcf.samples) - m)
+                if alt_freq<args.maf or alt_freq>(1-args.maf):
+                    filter_out.append(key)
+            sys.stderr.write("Filtering out %s variants which don't pass maf criteria\n" % len(filter_out))
+            for key in filter_out:
+                del variants[key]
+
         with open(args.out+".aa.pheno.txt","w") as O:
             if args.format=="plink2":
                 O.write("#IID\t%s\n" % ("\t".join(["%s_%s" % (mut[0],mut[1].replace(">","_")) for mut in variants])))
@@ -94,9 +118,9 @@ def main(args):
                 else:
                     O.write("%s\t%s\n" % (s,"\t".join(sample_vector)))
 
-            with open(args.out+".aa.phenotype_map.txt","w") as O:
-                for i,mut in enumerate(variants):
-                    O.write("%s\t%s\t%s\t%s\t%s_%s\n" % (i+1,mut[0],mut[1],csq2pos[(mut[0],mut[1])], mut[0],mut[1].replace(">","_")))
+        with open(args.out+".aa.phenotype_map.txt","w") as O:
+            for i,mut in enumerate(variants):
+                O.write("%s\t%s\t%s\t%s\t%s_%s\n" % (i+1,mut[0],mut[1],csq2pos[(mut[0],mut[1])], mut[0],mut[1].replace(">","_")))
 
 
 
@@ -108,7 +132,7 @@ def main(args):
                 dna_patterns[tuple(row[1:])].append(row[0])
             elif args.format=="plink1":
                 if i<2: continue
-                dna_patterns[tuple(row)].append(str(i+1))
+                dna_patterns[tuple(row)].append(str(i-1))
 
         with open(args.out+".dna.pheno.compressed.txt","w") as O:
             if args.format=="plink2":
@@ -131,7 +155,7 @@ def main(args):
                 patterns[tuple(row[1:])].append(row[0])
             elif args.format=="plink1":
                 if i<2: continue
-                patterns[tuple(row)].append(str(i+1))
+                patterns[tuple(row)].append(str(i-1))
 
         with open(args.out+".aa.pheno.compressed.txt","w") as O:
             if args.format=="plink2":
@@ -151,6 +175,7 @@ parser.add_argument('--vcf',help='VCF file',required=True)
 parser.add_argument('--out',help='Prefix for the output files',required=True)
 parser.add_argument('--format',choices=["plink1","plink2"],help='VCF file',required=True)
 parser.add_argument('--type',choices=["dna","aa","both"],help='The type of output file generated',required=True)
+parser.add_argument('--maf',type=float,help='Minor allele frequency cutoff')
 
 parser.set_defaults(func=main)
 args = parser.parse_args()
