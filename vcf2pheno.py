@@ -170,7 +170,7 @@ def main(args):
             for i in range(len(patterns)):
                 O.write("%s\t%s\n" % ("variant_"+str(i).zfill(4), ",".join(list(patterns.values())[i])))
 
-parser = argparse.ArgumentParser(description='XXX pipeline',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description='Convert vcf to phenotype files',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--vcf',help='VCF file',required=True)
 parser.add_argument('--out',help='Prefix for the output files',required=True)
 parser.add_argument('--format',choices=["plink1","plink2"],help='VCF file',required=True)
