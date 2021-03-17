@@ -87,7 +87,7 @@ def main(args):
                 if csq[0]=="@": continue
                 if "synonymous" in csq: continue
                 if "non_coding" in csq: continue
-
+                if "start_lost" in csq: tmp.append("1M>1*")
                 mut = (tmp[2],tmp[5])
 
                 missing[mut] = set(row[2:])
