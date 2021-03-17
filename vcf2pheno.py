@@ -10,6 +10,8 @@ def main(args):
         sys.stderr.write("Loading nucleotide variants\n")
         nt_variants = defaultdict(dict)
         for l in tqdm(fm.cmd_out("bcftools query -i 'GT!=\"ref\"' -f '%%POS[\\t%%SAMPLE:%%GT]\\n' %(vcf)s" % vars(args))):
+            if args.debug:
+                print(l)
             row = l.strip().split()
             for d in row[1:]:
                 s,gt = d.split(":")
@@ -61,6 +63,8 @@ def main(args):
         csq2pos = {}
         vcf = fm.vcf_class(args.vcf)
         for l in tqdm(fm.cmd_out("bcftools query -f '[%%POS\\t%%SAMPLE\\t%%TBCSQ\\n]' %(vcf)s" % vars(args))):
+            if args.debug:
+                print(l)
             row = l.strip().split()
             tbcsq = row[2].split("|")
 
@@ -73,9 +77,9 @@ def main(args):
 
 
         for l in tqdm(fm.cmd_out("bcftools query -i 'GT=\"mis\"' -f '%%POS\\t%%BCSQ[\\t%%SAMPLE]\\n' %(vcf)s" % vars(args))):
+            if args.debug:
+                print(l)
             row = l.strip().split()
-            if "Rv0002" in l and "11T>11S" in l:
-                import pdb; pdb.set_trace()
             if row[1]==".": continue
             for csq in row[1].split(","):
                 tmp = csq.split("|")
@@ -176,6 +180,7 @@ parser.add_argument('--out',help='Prefix for the output files',required=True)
 parser.add_argument('--format',choices=["plink1","plink2"],help='VCF file',required=True)
 parser.add_argument('--type',choices=["dna","aa","both"],help='The type of output file generated',required=True)
 parser.add_argument('--maf',type=float,help='Minor allele frequency cutoff')
+parser.add_argument('--debug',action="store_true",help='Print out lines to debug')
 
 parser.set_defaults(func=main)
 args = parser.parse_args()
