@@ -18,3 +18,4 @@ homoplastic_test<-tapply(data$V3, data$V1,function(x){
 
 homoplasic_pos<-as.numeric(names(homoplastic_test[which(homoplastic_test)]))
 
+write.table(homoplasic_pos,"selected_homoplastic_positions.txt",row.names = F,col.names = F,quote = F)
