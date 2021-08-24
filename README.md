@@ -37,7 +37,7 @@ optional arguments:
 First you will need to run `vcf_find_homoplasy.py` from the fastq2matrix package. If you can't find it please update the package on your computer. The inputs are a VCF file, the reference fasta and a rooted newick formatted tree. 
 
 ```
-vcf_find_homoplasy.py  --vcf test_data.vcf.gz --ref MTB.fa --tree rooted.nwk  --out output
+python vcf_find_homoplasy.py  --vcf test_data.vcf.gz --ref MTB.fa --tree rooted.nwk  --out output
 ```
 
 Three files will be produced, but we will only use the output.homoplasies.txt file in the next step which will use `select_homoplasy.R` either interactively or through using `Rscript`. Three parameters are set to classify mutations are homoplastic: 1) the minimum size for the biggest clade which aquired the mutation, 2) the minimum numer of other acquisitions on the tree and 3) the minimum number of samples in other (non-main) clades. When all these parameters pass a SNP will be called homoplastic.
