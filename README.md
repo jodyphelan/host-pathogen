@@ -34,7 +34,7 @@ optional arguments:
 
 # Detecting homoplasy 
 
-First you will need to run `vcf_find_homoplasy.py` from the fastq2matrix package. If you can't find it please update the package on your computer. The inputs are a VCF file, the reference fasta and a rooted newick formatted tree. 
+The inputs are a VCF file, the reference fasta and a rooted newick formatted tree. 
 
 ```
 python vcf_find_homoplasy.py  --vcf test_data.vcf.gz --ref MTB.fa --tree rooted.nwk  --out output
