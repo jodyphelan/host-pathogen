@@ -1,10 +1,11 @@
 from collections import defaultdict
 import argparse
-import fastq2matrix as fm
 from uuid import uuid4
 from Bio import Phylo 
 import ete3
 from tqdm import tqdm
+import subprocess as sp
+import os
 
 def nexus2newick(intree,outtree):
     trees = Phylo.parse(intree, 'nexus')
@@ -20,12 +21,12 @@ def nexus2newick(intree,outtree):
     Phylo.write([tree],outtree,"newick")
 
 def main(args):
-    id = "7ae737a4-27b7-42f7-89c4-ce3e3e3fc970" 
-    # id = str(uuid4())
-    # fm.run_cmd(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}")
+#    id = "7ae737a4-27b7-42f7-89c4-ce3e3e3fc970" 
+    id = str(uuid4())
+    sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
 
 
-    # nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.annotated_tree.nwk")
+    nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.annotated_tree.nwk")
 
     tree = ete3.Tree(f"{args.out}.annotated_tree.nwk",format=1)
     node_names = set([tree.name] + [n.name.split("/")[0] for n in tree.get_descendants()])
@@ -33,8 +34,8 @@ def main(args):
     internal_node_names = node_names - leaf_names
 
     states = defaultdict(dict)
-    for l in tqdm(fm.cmd_out(f"bcftools query -f '[%POS %REF %ALT %SAMPLE %GT\\n]' {id}/ancestral_sequences.vcf")):
-        row = l.strip().split()
+    for l in tqdm(sp.Popen(f"bcftools query -f '[%POS %REF %ALT %SAMPLE %GT\\n]' {id}/ancestral_sequences.vcf",shell=True,stdout=sp.PIPE).stdout):
+        row = l.decode().strip().split()
 
         alleles = [row[1]]+row[2].split(",")
         if row[4]==".":
@@ -70,7 +71,7 @@ def main(args):
         for site in convergent_sites:
             O.write("%s\t%s\n" % (site[0],len(site[1])))
 
-    fm.run_cmd(f"rm -r {id}")
+    sp.call(f"rm -r {id}",shell=True)
 
 
 
