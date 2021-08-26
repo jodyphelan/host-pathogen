@@ -21,9 +21,9 @@ def nexus2newick(intree,outtree):
     Phylo.write([tree],outtree,"newick")
 
 def main(args):
-    # id = "fc69aa3d-90ef-4857-a389-9b8efae8e833" 
-    id = str(uuid4())
-    sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
+    id = "fc22cdcd-380b-49a3-9548-6f0403ce1d12" 
+    # id = str(uuid4())
+    # sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
 
 
     nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.temp.annotated_tree.nwk")
@@ -46,11 +46,21 @@ def main(args):
     name_conversion = {}
     i=0
     tree_renamed = tree.copy()
+    if args.map_to_tree:
+        import re
+        tmp = open(args.map_to_tree).read()
+        tmp = re.sub("\[.+?\]","",tmp)
+        guide_tree = ete3.Tree(tmp,format=1)
+
     for n in tree_renamed.traverse("preorder"):
         if not n.is_leaf():
             i+=1
-            name_conversion[n.name] = "N%s" % str(i)
-            n.name =  "N%s" % str(i)
+            if args.map_to_tree:
+                new_id = guide_tree.get_common_ancestor(n.get_leaf_names()).name
+            else:
+                new_id = "N%s" % str(i)
+            name_conversion[n.name] = new_id
+            n.name =  new_id
         else:
             name_conversion[n.name] = n.name
         
@@ -59,7 +69,7 @@ def main(args):
     acgt = set(["A", "C", "G", "T", "a", "c", "g", "t"])
     convergent_sites = []
     with open(f"{args.out}.homoplasies.txt","w") as O:
-        O.write("Position\tAncestor_Node\tDerived_Node\tClade_Size\n")
+        O.write("Position\tAncestor_Node\tDerived_Node\tAncestor_Call\tDerived_Call\tClade_Size\n")
         for site in tqdm(list(states)):
             nucleotides = set([states[site][n] for n in node_names])
             if len(nucleotides)==1: continue
@@ -71,9 +81,10 @@ def main(args):
             for n in tree.traverse("preorder"):
                 if n == tree: continue
                 node_state = states[site][n.name]
-                if node_state != n.get_ancestors()[0].state and node_state in acgt and n.get_ancestors()[0].state in acgt:
+                parent_state = n.get_ancestors()[0].state
+                if node_state != parent_state and node_state in acgt and parent_state in acgt:
                     origins.append(n)
-                    O.write("%s\t%s\t%s\t%s\n" % (site,name_conversion[n.get_ancestors()[0].name], name_conversion[n.name],len(n.get_leaf_names())))
+                    O.write("%s\t%s\t%s\t%s\t%s\t%s\n" % (site,name_conversion[n.get_ancestors()[0].name], name_conversion[n.name],parent_state,node_state,len(n.get_leaf_names())))
                     
                 n.add_feature("state", node_state)
             if len(origins) > 1:
@@ -86,7 +97,7 @@ def main(args):
         for site in convergent_sites:
             O.write("%s\t%s\n" % (site[0],len(site[1])))
 
-    sp.call(f"rm -r {id}",shell=True)
+    # sp.call(f"rm -r {id}",shell=True)
 
 
 
@@ -95,6 +106,7 @@ parser.add_argument('--vcf',type=str,help='VCF file',required=True)
 parser.add_argument('--ref',type=str,help='VCF file',required=True)
 parser.add_argument('--tree',type=str,help='VCF file',required=True)
 parser.add_argument('--out',type=str,help='VCF file',required=True)
+parser.add_argument('--map-to-tree',type=str,help='VCF file')
 parser.set_defaults(func=main)
 args = parser.parse_args()
 args.func(args)
