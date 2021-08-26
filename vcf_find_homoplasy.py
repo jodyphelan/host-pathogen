@@ -21,9 +21,9 @@ def nexus2newick(intree,outtree):
     Phylo.write([tree],outtree,"newick")
 
 def main(args):
-    id = "fc22cdcd-380b-49a3-9548-6f0403ce1d12" 
-    # id = str(uuid4())
-    # sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
+    # id = "fc22cdcd-380b-49a3-9548-6f0403ce1d12" 
+    id = str(uuid4())
+    sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
 
 
     nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.temp.annotated_tree.nwk")
@@ -97,7 +97,7 @@ def main(args):
         for site in convergent_sites:
             O.write("%s\t%s\n" % (site[0],len(site[1])))
 
-    # sp.call(f"rm -r {id}",shell=True)
+    sp.call(f"rm -r {id}",shell=True)
 
 
 
