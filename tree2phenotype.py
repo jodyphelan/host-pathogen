@@ -24,7 +24,7 @@ def main(args):
 
         bootstrap = node.name
         node_id = "N%s" % (i)
-        node.name = "%s" % (node_id)
+        node.name = "%s" % (node_id) if not args.no_pheno else "%s/%s" % (node_id,bootstrap)
         if float(bootstrap)>args.bootstrap:
             tmp = {}
             node_samples = set(node.get_leaf_names())
@@ -36,18 +36,20 @@ def main(args):
 
     
     tree.write(format=1, outfile=args.out+".annotated_tree.nwk")
-    with open(args.out+".phenos.txt","w") as O:
-        O.write("#IID\t%s\n" % "\t".join(list(phenos)))
-        for s in tree.get_leaf_names():
-            O.write("%s\t%s\n" % (s,"\t".join([phenos[p][s] for p in phenos])))
-
-    print("Written %s phenotypes to %s.phenos.txt" % (len(phenos),args.out))
     print("Written annotated tree to %s.annotated_tree.nwk" % (args.out))
+    if not args.no_pheno:
+        with open(args.out+".phenos.txt","w") as O:
+            O.write("#IID\t%s\n" % "\t".join(list(phenos)))
+            for s in tree.get_leaf_names():
+                O.write("%s\t%s\n" % (s,"\t".join([phenos[p][s] for p in phenos])))
+        print("Written %s phenotypes to %s.phenos.txt" % (len(phenos),args.out))
+
     
 
 parser = argparse.ArgumentParser(description='tbprofiler script',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--tree',type=str,help='Newick formatted tree with bootstraps')
-parser.add_argument('--out',type=str,help='Prefix for output files')
+parser.add_argument('--tree',type=str,help='Newick formatted tree with bootstraps',required = True)
+parser.add_argument('--out',type=str,help='Prefix for output files',required = True)
+parser.add_argument('--no-pheno',action="store_true",help='Prefix for output files')
 parser.add_argument('--bootstrap',type=int,default=95,help='Minimum bootstrap to use clade as phenotype')
 parser.set_defaults(func=main)
 args = parser.parse_args()
