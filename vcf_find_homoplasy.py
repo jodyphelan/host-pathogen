@@ -23,7 +23,8 @@ def nexus2newick(intree,outtree):
 def main(args):
     # id = "fc22cdcd-380b-49a3-9548-6f0403ce1d12" 
     id = str(uuid4())
-    sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
+    sp.call(f"bcftools view -c 3 {args.vcf} -Oz -o {id}.reduced.vcf.gz",shell=True)
+    sp.call(f"treetime ancestral --aln {id}.reduced.vcf.gz --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
 
 
     nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.temp.annotated_tree.nwk")
@@ -68,7 +69,7 @@ def main(args):
 
     acgt = set(["A", "C", "G", "T", "a", "c", "g", "t"])
     convergent_sites = []
-    with open(f"{args.out}.homoplasies.txt","w") as O:
+    with open(f"{args.out}.branch_mutations.txt","w") as O:
         O.write("Position\tAncestor_Node\tDerived_Node\tAncestor_Call\tDerived_Call\tClade_Size\n")
         for site in tqdm(list(states)):
             nucleotides = set([states[site][n] for n in node_names])
@@ -97,7 +98,7 @@ def main(args):
         for site in convergent_sites:
             O.write("%s\t%s\n" % (site[0],len(site[1])))
 
-    sp.call(f"rm -r {id}",shell=True)
+    sp.call(f"rm -r {id}*",shell=True)
 
 
 
