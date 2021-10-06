@@ -69,7 +69,7 @@ def main(args):
 
     acgt = set(["A", "C", "G", "T", "a", "c", "g", "t"])
     convergent_sites = []
-    with open(f"{args.out}.branch_mutations.txt","w") as O:
+    with open(f"{args.out}.branch_changes.txt","w") as O:
         O.write("Position\tAncestor_Node\tDerived_Node\tAncestor_Call\tDerived_Call\tClade_Size\n")
         for site in tqdm(list(states)):
             nucleotides = set([states[site][n] for n in node_names])

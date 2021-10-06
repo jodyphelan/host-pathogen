@@ -17,8 +17,8 @@ def main(args):
         if node.is_leaf():
             continue
         i+=1
-        # if node.is_root():
-        #     continue
+        if node.is_root():
+            node.name=""
         if node.name=="":
             node.name="100"
 
