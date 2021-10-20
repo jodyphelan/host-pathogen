@@ -52,7 +52,7 @@ def main(args):
     tree_renamed = tree.copy()
     if args.map_to_tree:
         import re
-        tmp = open(args.map_to_tree).read()
+        tmp = open(args.tree).read()
         tmp = re.sub("\[.+?\]","",tmp)
         guide_tree = ete3.Tree(tmp,format=1)
 
@@ -107,10 +107,10 @@ def main(args):
 
 parser = argparse.ArgumentParser(description='tbprofiler script',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--vcf',type=str,help='VCF file',required=True)
-parser.add_argument('--ref',type=str,help='VCF file',required=True)
-parser.add_argument('--tree',type=str,help='VCF file',required=True)
-parser.add_argument('--out',type=str,help='VCF file',required=True)
-parser.add_argument('--map-to-tree',type=str,help='VCF file')
+parser.add_argument('--ref',type=str,help='Reference fasta file',required=True)
+parser.add_argument('--tree',type=str,help='Tree file',required=True)
+parser.add_argument('--out',type=str,help='Ouput prefix for results',required=True)
+parser.add_argument('--map-to-tree',action="store_true",help='Use the internal node names of the input tree')
 parser.add_argument('--filter-low-af',action="store_true",help="Don't reconstruct variants which appear in just one sample")
 parser.set_defaults(func=main)
 args = parser.parse_args()
