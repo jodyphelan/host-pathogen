@@ -23,8 +23,11 @@ def nexus2newick(intree,outtree):
 def main(args):
     # id = "fc22cdcd-380b-49a3-9548-6f0403ce1d12" 
     id = str(uuid4())
-    sp.call(f"bcftools view -c 3 {args.vcf} -Oz -o {id}.reduced.vcf.gz",shell=True)
-    sp.call(f"treetime ancestral --aln {id}.reduced.vcf.gz --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
+    if args.filter_low_af:
+        sp.call(f"bcftools view -c 3 {args.vcf} -Oz -o {id}.reduced.vcf.gz",shell=True)
+        sp.call(f"treetime ancestral --aln {id}.reduced.vcf.gz --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
+    else:
+        sp.call(f"treetime ancestral --aln {args.vcf} --vcf-reference {args.ref} --tree {args.tree}  --outdir {id}",shell=True)
 
 
     nexus2newick(f"{id}/annotated_tree.nexus", f"{args.out}.temp.annotated_tree.nwk")
